@@ -43,7 +43,7 @@ public class WordCountV2  extends Configured implements Tool{
         //Initialize the Hadoop job and set the jar as well as the name of the Job
         Job job = new Job();
         job.setJarByClass(WordCountV2.class);
-        job.setJobName("Juan's WordCount");
+        job.setJobName("Bigram");
 
         FileInputFormat.addInputPath(job, new Path(args[0]));
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
@@ -73,13 +73,24 @@ public class WordCountV2  extends Configured implements Tool{
         private final static IntWritable one = new IntWritable(1);
         private Text word = new Text();
 
+        private String sanitizeString(String str){
+            String regex="([^\\s\\w]|_)+";
+            return str.replaceAll(regex," ").toLowerCase();
+        }
+
         public void map(Object key, Text value, Context context
         ) throws IOException, InterruptedException {
-            StringTokenizer itr = new StringTokenizer(value.toString());
+            StringTokenizer itr = new StringTokenizer(sanitizeString(value.toString()));
 
+            if(itr.countTokens()<2)
+                return;
+
+            String token1=itr.nextToken();
             while (itr.hasMoreTokens()) {
-                Text w = new Text(itr.nextToken());
+                String token2=itr.nextToken();
+                Text w = new Text(token1+"+"+token2);
                 context.write(w, one);
+                token1=token2;
             }
         }
     }
