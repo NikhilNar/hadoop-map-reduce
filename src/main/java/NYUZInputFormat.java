@@ -43,20 +43,19 @@ public class NYUZInputFormat extends FileInputFormat<Text, BytesWritable> {
         ZipInputStream zipInputStream = new ZipInputStream(stream);
 
         //Add initial Offset
-        offsets.add(0L);
-        long previousOffset = 0L;
+        long offsetValue = 0L;
+        offsets.add(offsetValue);
         ZipEntry entry;
         //As long as an entry is present, Iterate over it.
         while ((entry = zipInputStream.getNextEntry()) != null) {
 
-            long currentOffset = previousOffset + (long) getByteSizeEntry(zipInputStream);
+            offsetValue +=  (long) getByteSizeEntry(zipInputStream);
             //If the filename of the entry starts with an alphanumeric character, only then add the offset.
             if (!entry.getName().startsWith("[^A-Za-z0-9]")) {
-                offsets.add(currentOffset);
+                offsets.add(offsetValue);
             }
             //Close this entry
             zipInputStream.closeEntry();
-            previousOffset = currentOffset;
         }
         //Close streams
         zipInputStream.close();
