@@ -28,20 +28,6 @@ import java.util.zip.ZipInputStream;
 public class NYUZInputFormat extends FileInputFormat<Text, BytesWritable> {
     public static final Log log = LogFactory.getLog(NYUZInputFormat.class);
 
-    @Override
-    public List<InputSplit> getSplits(JobContext context)
-            throws IOException {
-        ArrayList<InputSplit> inputSplits = new ArrayList<InputSplit>();
-        Path inputPath = getInputPaths(context)[0];
-        List<Long> offsets = getOffsetsForSplits(context, inputPath);
-        long prevStart = 0;
-        for (int i = 1; i < offsets.size(); i++) {
-            inputSplits.add(new FileSplit(inputPath, prevStart, offsets.get(i), null));
-            prevStart = offsets.get(i);
-        }
-        return inputSplits;
-    }
-
     /**
      * This function returns the offset at which each file resides.
      *
@@ -50,7 +36,7 @@ public class NYUZInputFormat extends FileInputFormat<Text, BytesWritable> {
      * @return -
      * @throws IOException -
      */
-    private List<Long> getOffsetsForSplits(JobContext context, Path inputPath) throws IOException {
+    private List<Long> getOffsets(JobContext context, Path inputPath) throws IOException {
         List<Long> offsets = new ArrayList<Long>();
         FileSystem fileSystem = inputPath.getFileSystem(context.getConfiguration());
         FSDataInputStream stream = fileSystem.open(inputPath);
@@ -63,7 +49,7 @@ public class NYUZInputFormat extends FileInputFormat<Text, BytesWritable> {
         //As long as an entry is present, Iterate over it.
         while ((entry = zipInputStream.getNextEntry()) != null) {
 
-            long currentOffset = previousOffset + (long) getSizeForThisEntry(zipInputStream);
+            long currentOffset = previousOffset + (long) getByteSizeEntry(zipInputStream);
             //If the filename of the entry starts with an alphanumeric character, only then add the offset.
             if (!entry.getName().startsWith("[^A-Za-z0-9]")) {
                 offsets.add(currentOffset);
@@ -81,28 +67,32 @@ public class NYUZInputFormat extends FileInputFormat<Text, BytesWritable> {
     /**
      * This function gets the length of an entry
      *
-     * @param zipInputStream - the zip stream from which we need to check size of the entry
+     * @param zis - the zip stream from which we need to check size of the entry
      * @return - size of the entry
      * @throws IOException
      */
-    private int getSizeForThisEntry(ZipInputStream zipInputStream) throws IOException {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        byte[] temp = new byte[8192];
-        while (true) {
-            //Keep reading as long as we can. Only then will we get the true size of the entry
-            int bytesRead = 0;
-            try {
-                bytesRead = zipInputStream.read(temp, 0, 8192);
-            } catch (EOFException e) {
-                return 0;
-            }
-            if (bytesRead > 0){
-                byteArrayOutputStream.write(temp, 0, bytesRead);
-            }
-            else
-                break;
+    private int getByteSizeEntry(ZipInputStream zis) throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        byte[] buffer = new byte[4096];
+        int len;
+        while ((len = zis.read(buffer)) > 0) {
+            bos.write(buffer, 0, len);
         }
-        return byteArrayOutputStream.size();
+        return bos.size();
+    }
+
+    @Override
+    public List<InputSplit> getSplits(JobContext context)
+            throws IOException {
+        List<InputSplit> splits = new ArrayList<InputSplit>();
+        Path path = getInputPaths(context)[0];
+        List<Long> offsets = getOffsets(context, path);
+        long prevStart = 0;
+        for (int i = 1; i < offsets.size(); i++) {
+            splits.add(new FileSplit(path, prevStart, offsets.get(i), null));
+            prevStart = offsets.get(i);
+        }
+        return splits;
     }
 
     /*** return a record reader
