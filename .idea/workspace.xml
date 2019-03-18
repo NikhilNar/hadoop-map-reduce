@@ -36,13 +36,13 @@
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="java" value="470" />
+          <entry key="java" value="495" />
           <entry key="xml" value="1" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JAVA" value="470" />
+          <entry key="JAVA" value="495" />
           <entry key="XML" value="1" />
         </counts>
       </usages-collector>
@@ -74,10 +74,9 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/java/NYUZInputFormat.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="407">
-              <caret line="66" column="8" selection-start-line="66" selection-start-column="8" selection-end-line="66" selection-end-column="8" />
+            <state relative-caret-position="68">
+              <caret line="4" column="42" selection-start-line="4" selection-start-column="42" selection-end-line="4" selection-end-column="42" />
               <folding>
-                <element signature="imports" expanded="true" />
                 <element signature="e#1591#1597#0" expanded="true" />
                 <element signature="e#1360#1372#0" expanded="true" />
               </folding>
@@ -230,12 +229,12 @@
       <option name="presentableId" value="Default" />
       <updated>1552853565871</updated>
       <workItem from="1552853571184" duration="4113000" />
-      <workItem from="1552861391027" duration="5604000" />
+      <workItem from="1552861391027" duration="6213000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="9717000" />
+    <option name="totallyTimeSpent" value="10326000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1382" height="744" extended-state="6" />
@@ -322,10 +321,9 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/NYUZInputFormat.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="407">
-          <caret line="66" column="8" selection-start-line="66" selection-start-column="8" selection-end-line="66" selection-end-column="8" />
+        <state relative-caret-position="68">
+          <caret line="4" column="42" selection-start-line="4" selection-start-column="42" selection-end-line="4" selection-end-column="42" />
           <folding>
-            <element signature="imports" expanded="true" />
             <element signature="e#1591#1597#0" expanded="true" />
             <element signature="e#1360#1372#0" expanded="true" />
           </folding>

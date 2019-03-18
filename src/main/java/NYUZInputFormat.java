@@ -1,21 +1,19 @@
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.BytesWritable;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
-
 import java.io.ByteArrayOutputStream;
+import java.util.zip.ZipInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.zip.ZipInputStream;
-
 /**
  * Extends the basic FileInputFormat to accept ZIP files.
  * ZIP files are not 'splittable', so we need to process/decompress in place:
@@ -33,24 +31,24 @@ public class NYUZInputFormat extends FileInputFormat<Text, BytesWritable> {
         offsets.add(offsetValue);
 
         while (zis.getNextEntry() != null) {
-            offsetValue +=  (long) getByteSizeEntry(zis);
+            offsetValue += getByteSizeEntry(zis);
             offsets.add(offsetValue);
             zis.closeEntry();
         }
 
-        zis.close();
         fis.close();
+        zis.close();
         return offsets;
     }
 
-    private int getByteSizeEntry(ZipInputStream zis) throws IOException {
+    private long getByteSizeEntry(ZipInputStream zis) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         byte[] buffer = new byte[4096];
         int len;
         while ((len = zis.read(buffer)) > 0) {
             bos.write(buffer, 0, len);
         }
-        return bos.size();
+        return (long)bos.size();
     }
 
     @Override
@@ -64,7 +62,6 @@ public class NYUZInputFormat extends FileInputFormat<Text, BytesWritable> {
             splits.add(new FileSplit(path, lastStartValue, offLength, null));
             lastStartValue = offLength;
         }
-
         return splits;
     }
 
