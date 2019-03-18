@@ -1,5 +1,3 @@
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -27,20 +25,27 @@ public class NYUZRecordReader extends RecordReader<Text, BytesWritable> {
 
    private Text currentKey;
    private BytesWritable currentValue;
-   private FSDataInputStream fsDataInputStream;
-   private ZipInputStream zipInputStream;
-   public static final Log log = LogFactory.getLog(NYUZRecordReader.class);
-   private Long amountToSkip;
+   private FSDataInputStream fis;
+   private ZipInputStream zis;
    private boolean done;
+
+   private ByteArrayOutputStream getByteStream(ZipInputStream zis) throws IOException {
+      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+      byte[] buffer = new byte[4096];
+      int len;
+      while ((len = zis.read(buffer)) > 0) {
+         bos.write(buffer, 0, len);
+      }
+      return bos;
+   }
 
    @Override
    public void initialize(InputSplit inputSplit, TaskAttemptContext context) throws IOException, InterruptedException {
-      FileSplit fileSplit = (FileSplit) inputSplit;
-      Path zipPath = fileSplit.getPath();
-      FileSystem fileSystem = zipPath.getFileSystem(context.getConfiguration());
-      fsDataInputStream = fileSystem.open(zipPath);
-      zipInputStream = new ZipInputStream(fsDataInputStream);
-      amountToSkip = ((FileSplit) inputSplit).getStart();
+      FileSplit split = (FileSplit) inputSplit;
+      Path path = split.getPath();
+      FileSystem fileSystem = path.getFileSystem(context.getConfiguration());
+      fis = fileSystem.open(path);
+      zis = new ZipInputStream(fis);
    }
 
    @Override
@@ -48,47 +53,18 @@ public class NYUZRecordReader extends RecordReader<Text, BytesWritable> {
       if (done) {
          return false;
       }
-      skipAmount();
-      ZipEntry entry = zipInputStream.getNextEntry();
+
+      ZipEntry entry = zis.getNextEntry();
       if (entry == null) {
+         done = true;
          return false;
       }
       currentKey = new Text(entry.getName());
-      ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-      byte[] bytes = new byte[4096];
-      while (true) {
-         int bytesRead = 0;
-         try {
-            bytesRead = zipInputStream.read(bytes, 0, 4096);
-         } catch (EOFException e) {
-            return false;
-         }
-         if (bytesRead > 0)
-            byteArrayOutputStream.write(bytes, 0, bytesRead);
-         else
-            break;
-      }
-      zipInputStream.closeEntry();
-
       // Uncompressed contents
-      currentValue = new BytesWritable(byteArrayOutputStream.toByteArray());
+      currentValue = new BytesWritable(getByteStream(zis).toByteArray());
       //Make sure only 1 entry is processed
-      done = true;
-      return true;
-   }
 
-   /**
-    * Function to skip to the desired entry.
-    * Each split has a start offset, keep skipping till we reach there.
-    * @throws IOException -
-    */
-   private void skipAmount() throws IOException {
-      while (amountToSkip > 0) {
-         zipInputStream.getNextEntry();
-         long skipped = zipInputStream.skip(amountToSkip);
-         amountToSkip -= skipped;
-         zipInputStream.closeEntry();
-      }
+      return true;
    }
 
    @Override
@@ -109,10 +85,10 @@ public class NYUZRecordReader extends RecordReader<Text, BytesWritable> {
    @Override
    public void close() throws IOException {
       try {
-         zipInputStream.close();
-         fsDataInputStream.close();
+         zis.close();
+         fis.close();
       } catch (Exception e) {
-         System.out.println("Could not close one of the streams");
+         System.out.println("Not able to close streams");
       }
    }
 }
