@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="fe78b4ad-b77d-4718-8789-6f3aaddb1632" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/src/main/java/NYUZRecordReader.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/NYUZRecordReader.java" afterDir="false" />
-    </list>
+    <list default="true" id="fe78b4ad-b77d-4718-8789-6f3aaddb1632" name="Default Changelist" comment="" />
     <ignored path="$PROJECT_DIR$/out/" />
     <ignored path="$PROJECT_DIR$/target/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -16,7 +14,7 @@
     <session id="-108666966">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="1" />
+          <entry key="project.closed" value="2" />
           <entry key="project.open.time.2" value="1" />
           <entry key="project.open.time.6" value="1" />
           <entry key="project.opened" value="2" />
@@ -88,7 +86,7 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/java/NYUZRecordReader.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="220">
+            <state relative-caret-position="493">
               <caret line="29" column="3" selection-start-line="29" selection-start-column="3" selection-end-line="29" selection-end-column="3" />
               <folding>
                 <element signature="imports" expanded="true" />
@@ -221,16 +219,15 @@
       <option name="presentableId" value="Default" />
       <updated>1552853565871</updated>
       <workItem from="1552853571184" duration="4113000" />
-      <workItem from="1552861391027" duration="10028000" />
+      <workItem from="1552861391027" duration="10628000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="14141000" />
+    <option name="totallyTimeSpent" value="14741000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1382" height="744" extended-state="6" />
-    <editor active="true" />
     <layout>
       <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.25340393" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
@@ -326,7 +323,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/NYUZRecordReader.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="220">
+        <state relative-caret-position="493">
           <caret line="29" column="3" selection-start-line="29" selection-start-column="3" selection-end-line="29" selection-end-column="3" />
           <folding>
             <element signature="imports" expanded="true" />

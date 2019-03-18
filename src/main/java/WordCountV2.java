@@ -1,6 +1,5 @@
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -46,10 +45,6 @@ public class WordCountV2  extends Configured implements Tool{
         job.setJarByClass(WordCountV2.class);
         job.setJobName("Bigram");
 
-        job.setInputFormatClass(NYUZInputFormat.class);
-        NYUZInputFormat.addInputPath(job,new Path(args[0]));
-        NYUZInputFormat.addInputPath(job,new Path(args[1]));
-
         FileInputFormat.addInputPath(job, new Path(args[0]));
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
 
@@ -73,7 +68,7 @@ public class WordCountV2  extends Configured implements Tool{
         return returnValue;
     }
 
-    public static class MyMapper extends Mapper<Object, BytesWritable, Text, IntWritable> {
+    public static class MyMapper extends Mapper<Object, Text, Text, IntWritable> {
 
         private final static IntWritable one = new IntWritable(1);
         private Text word = new Text();
@@ -83,9 +78,9 @@ public class WordCountV2  extends Configured implements Tool{
             return str.replaceAll(regex," ").toLowerCase();
         }
 
-        public void map(Object key, BytesWritable value, Context context
+        public void map(Object key, Text value, Context context
         ) throws IOException, InterruptedException {
-            StringTokenizer itr = new StringTokenizer(sanitizeString(new String(value.copyBytes())));
+            StringTokenizer itr = new StringTokenizer(sanitizeString(value.toString()));
 
             if(itr.countTokens()<2)
                 return;
