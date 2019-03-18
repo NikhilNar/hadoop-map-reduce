@@ -1,18 +1,17 @@
-import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
-
-import java.io.ByteArrayOutputStream;
-import java.io.EOFException;
-import java.io.IOException;
-import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import java.util.zip.ZipEntry;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
 
 /*** Custom Hadoop Record Reader : zipped file
  *
@@ -22,12 +21,13 @@ import java.util.zip.ZipInputStream;
  *
  * ***/
 public class NYUZRecordReader extends RecordReader<Text, BytesWritable> {
-   private Text currentKey;
-   private BytesWritable currentValue;
+
    private FSDataInputStream fis;
    private ZipInputStream zis;
-   private Long amountToSkip;
-   private boolean done;
+   private Text currentKey;
+   private BytesWritable currentValue;
+   private boolean isfinished;
+   private Long bytesSkipped;
 
    private ByteArrayOutputStream getByteStream(ZipInputStream zis) throws IOException {
       ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -46,45 +46,31 @@ public class NYUZRecordReader extends RecordReader<Text, BytesWritable> {
       FileSystem fileSystem = path.getFileSystem(context.getConfiguration());
       fis = fileSystem.open(path);
       zis = new ZipInputStream(fis);
-      amountToSkip = ((FileSplit) inputSplit).getStart();
+      bytesSkipped = ((FileSplit) inputSplit).getStart();
    }
 
    @Override
    public boolean nextKeyValue() throws IOException, InterruptedException {
-      if (done) {
-         return false;
-      }
-      //Skip to the beginning of this split
-      skipAmount();
+      if (isfinished) return false;
 
-      //After skipping, get the entry
+      findSplitStart();
+
       ZipEntry entry = zis.getNextEntry();
-      if (entry == null) {
+      if (entry == null)
          return false;
-      }
-      currentKey = new Text(entry.getName());
 
-      // Uncompressed contents
+      currentKey = new Text(entry.getName());
       currentValue = new BytesWritable(getByteStream(zis).toByteArray());
 
-      //Make sure only 1 entry is processed, else, it'll process all files after this
-      done = true;
+      isfinished = true;
       zis.closeEntry();
       return true;
    }
 
-   /**
-    * Function to skip to the desired entry.
-    * Each split has a start offset, keep skipping till we reach there.
-    * @throws IOException -
-    */
-   private void skipAmount() throws IOException {
-      while (amountToSkip > 0) {
+   private void findSplitStart() throws IOException {
+      while (bytesSkipped > 0) {
          zis.getNextEntry();
-         //Skip only skips within the current entry, so the actual amount skipped may vary
-         long skipped = zis.skip(amountToSkip);
-         //We still need to skip after the actual amount skipped
-         amountToSkip -= skipped;
+         bytesSkipped -= zis.skip(bytesSkipped);
          zis.closeEntry();
       }
    }
@@ -101,7 +87,7 @@ public class NYUZRecordReader extends RecordReader<Text, BytesWritable> {
 
    @Override
    public float getProgress() throws IOException, InterruptedException {
-      return done ? 1.0f : 0.0f;
+      return isfinished ? 1.0f : 0.0f;
    }
 
    @Override
