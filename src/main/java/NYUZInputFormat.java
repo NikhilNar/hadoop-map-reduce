@@ -1,5 +1,3 @@
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -13,11 +11,9 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 import java.io.ByteArrayOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 /**
@@ -26,50 +22,27 @@ import java.util.zip.ZipInputStream;
  * each ZIP file will be processed by a single Mapper; we are parallelizing files, not lines...
  */
 public class NYUZInputFormat extends FileInputFormat<Text, BytesWritable> {
-    public static final Log log = LogFactory.getLog(NYUZInputFormat.class);
 
-    /**
-     * This function returns the offset at which each file resides.
-     *
-     * @param context   - the input context
-     * @param inputPath - the path which contains the zip file.
-     * @return -
-     * @throws IOException -
-     */
-    private List<Long> getOffsets(JobContext context, Path inputPath) throws IOException {
+    private List<Long> getOffsets(JobContext context, Path path) throws IOException {
         List<Long> offsets = new ArrayList<Long>();
-        FileSystem fileSystem = inputPath.getFileSystem(context.getConfiguration());
-        FSDataInputStream stream = fileSystem.open(inputPath);
-        ZipInputStream zipInputStream = new ZipInputStream(stream);
+        FileSystem fs = path.getFileSystem(context.getConfiguration());
+        FSDataInputStream fis = fs.open(path);
+        ZipInputStream zis = new ZipInputStream(fis);
 
-        //Add initial Offset
         long offsetValue = 0L;
         offsets.add(offsetValue);
-        ZipEntry entry;
-        //As long as an entry is present, Iterate over it.
-        while ((entry = zipInputStream.getNextEntry()) != null) {
 
-            offsetValue +=  (long) getByteSizeEntry(zipInputStream);
-            //If the filename of the entry starts with an alphanumeric character, only then add the offset.
-            if (!entry.getName().startsWith("[^A-Za-z0-9]")) {
-                offsets.add(offsetValue);
-            }
-            //Close this entry
-            zipInputStream.closeEntry();
+        while (zis.getNextEntry() != null) {
+            offsetValue +=  (long) getByteSizeEntry(zis);
+            offsets.add(offsetValue);
+            zis.closeEntry();
         }
-        //Close streams
-        zipInputStream.close();
-        stream.close();
+
+        zis.close();
+        fis.close();
         return offsets;
     }
 
-    /**
-     * This function gets the length of an entry
-     *
-     * @param zis - the zip stream from which we need to check size of the entry
-     * @return - size of the entry
-     * @throws IOException
-     */
     private int getByteSizeEntry(ZipInputStream zis) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         byte[] buffer = new byte[4096];
@@ -86,11 +59,12 @@ public class NYUZInputFormat extends FileInputFormat<Text, BytesWritable> {
         List<InputSplit> splits = new ArrayList<InputSplit>();
         Path path = getInputPaths(context)[0];
         List<Long> offsets = getOffsets(context, path);
-        long prevStart = 0;
-        for (int i = 1; i < offsets.size(); i++) {
-            splits.add(new FileSplit(path, prevStart, offsets.get(i), null));
-            prevStart = offsets.get(i);
+        long lastStartValue = 0;
+        for(Long offLength: offsets){
+            splits.add(new FileSplit(path, lastStartValue, offLength, null));
+            lastStartValue = offLength;
         }
+
         return splits;
     }
 
