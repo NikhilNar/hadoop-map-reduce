@@ -22,11 +22,11 @@ import java.util.zip.ZipInputStream;
  *
  * ***/
 public class NYUZRecordReader extends RecordReader<Text, BytesWritable> {
-
    private Text currentKey;
    private BytesWritable currentValue;
    private FSDataInputStream fis;
    private ZipInputStream zis;
+   private Long amountToSkip;
    private boolean done;
 
    private ByteArrayOutputStream getByteStream(ZipInputStream zis) throws IOException {
@@ -46,6 +46,7 @@ public class NYUZRecordReader extends RecordReader<Text, BytesWritable> {
       FileSystem fileSystem = path.getFileSystem(context.getConfiguration());
       fis = fileSystem.open(path);
       zis = new ZipInputStream(fis);
+      amountToSkip = ((FileSplit) inputSplit).getStart();
    }
 
    @Override
@@ -53,18 +54,39 @@ public class NYUZRecordReader extends RecordReader<Text, BytesWritable> {
       if (done) {
          return false;
       }
+      //Skip to the beginning of this split
+      skipAmount();
 
+      //After skipping, get the entry
       ZipEntry entry = zis.getNextEntry();
       if (entry == null) {
-         done = true;
          return false;
       }
       currentKey = new Text(entry.getName());
+
       // Uncompressed contents
       currentValue = new BytesWritable(getByteStream(zis).toByteArray());
-      //Make sure only 1 entry is processed
 
+      //Make sure only 1 entry is processed, else, it'll process all files after this
+      done = true;
+      zis.closeEntry();
       return true;
+   }
+
+   /**
+    * Function to skip to the desired entry.
+    * Each split has a start offset, keep skipping till we reach there.
+    * @throws IOException -
+    */
+   private void skipAmount() throws IOException {
+      while (amountToSkip > 0) {
+         zis.getNextEntry();
+         //Skip only skips within the current entry, so the actual amount skipped may vary
+         long skipped = zis.skip(amountToSkip);
+         //We still need to skip after the actual amount skipped
+         amountToSkip -= skipped;
+         zis.closeEntry();
+      }
    }
 
    @Override
@@ -88,7 +110,7 @@ public class NYUZRecordReader extends RecordReader<Text, BytesWritable> {
          zis.close();
          fis.close();
       } catch (Exception e) {
-         System.out.println("Not able to close streams");
+         System.out.println("Not able to close the streams");
       }
    }
 }
